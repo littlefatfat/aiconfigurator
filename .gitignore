@@ -21,3 +21,11 @@ env/
 *.pyc
 *.pyo
 *.pyd
+
+.qoder/
+refactor_test_aic/profile_result/
+batch_info/*
+batch_info_*/*
+power_law_understand/
+collector/*.txt
+collector/all_*
