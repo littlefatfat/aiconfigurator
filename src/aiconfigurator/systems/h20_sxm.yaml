@@ -7,7 +7,7 @@ gpu:
   mem_bw_empirical_scaling_factor: 0.8 # some nonofficial correction based on observations, you should try to modify based on your own observations
   mem_empirical_constant_latency: 0.000003 # 3us some nonofficial correction based on observations, you should try to modify based on your own observations
   mem_capacity: 103079215104 # 96GiB
-  float16_tc_flops: 146000000000000 # 146TFLOPS
+  bfloat16_tc_flops: 146000000000000 # 146TFLOPS
   int8_tc_flops: 292000000000000 # 292TFLOPS
   fp8_tc_flops: 292000000000000 # 292TFLOPS
   power: 500  # Watt
