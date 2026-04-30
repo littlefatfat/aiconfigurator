@@ -497,6 +497,17 @@ def load_nccl_data(nccl_file):
     return nccl_data
 
 
+# Legacy databases tag w16a16 rows as "float16" but current quant-mode enums
+# (GEMMQuantMode / FMHAQuantMode / KVCacheQuantMode / MoEQuantMode) only define
+# "bfloat16" (both are w16a16). Remap transparently so older perf data stays
+# queryable without rewriting CSVs.
+_LEGACY_DTYPE_REMAP = {"float16": "bfloat16"}
+
+
+def _canonicalize_w16a16_dtype(dtype: str) -> str:
+    return _LEGACY_DTYPE_REMAP.get(dtype, dtype)
+
+
 def load_gemm_data(gemm_file):
     """
     Load the gemm data with power support (backward compatible).
@@ -540,11 +551,7 @@ def load_gemm_data(gemm_file):
         # NEW: Calculate energy from power and latency
         energy = power * latency  # watt-milliseconds (W·ms)
 
-        # vllm gemm has some awq and gptq data, discard it.
-        if quant_mode in ["awq", "gptq"]:
-            continue
-
-        quant_mode = common.GEMMQuantMode[quant_mode]
+        quant_mode = common.GEMMQuantMode[_canonicalize_w16a16_dtype(quant_mode)]
 
         try:
             # Check for conflict
@@ -757,7 +764,7 @@ def load_moe_data(moe_file):
         # NEW: Calculate energy from power and latency
         energy = power * latency  # watt-milliseconds
 
-        quant_mode = common.MoEQuantMode[quant_mode]
+        quant_mode = common.MoEQuantMode[_canonicalize_w16a16_dtype(quant_mode)]
 
         moe_data = moe_low_latency_data if kernel_source == "moe_torch_flow_min_latency" else moe_default_data
 
@@ -845,8 +852,8 @@ def load_context_attention_data(context_attention_file):
         # Use kv_n = 0 to mean n_kv == n.
         kv_n = 0 if n == kv_n else kv_n
 
-        quant_mode = common.FMHAQuantMode[quant_mode]
-        kv_cache_dtype = common.KVCacheQuantMode[kv_cache_dtype]
+        quant_mode = common.FMHAQuantMode[_canonicalize_w16a16_dtype(quant_mode)]
+        kv_cache_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(kv_cache_dtype)]
 
         try:
             # Check for conflict
@@ -926,7 +933,7 @@ def load_generation_attention_data(generation_attention_file):
         kv_n = 0 if n == kv_n else kv_n
         s = s + step
 
-        kv_cache_dtype = common.KVCacheQuantMode[kv_cache_dtype]
+        kv_cache_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(kv_cache_dtype)]
 
         try:
             # Check for conflict
@@ -992,8 +999,8 @@ def load_context_mla_data(context_mla_file):
         # NEW: Calculate energy from power and latency
         energy = power * latency  # watt-milliseconds
 
-        quant_mode = common.FMHAQuantMode[quant_mode]
-        kv_cache_dtype = common.KVCacheQuantMode[kv_cache_dtype]
+        quant_mode = common.FMHAQuantMode[_canonicalize_w16a16_dtype(quant_mode)]
+        kv_cache_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(kv_cache_dtype)]
 
         try:
             # Check for conflict
@@ -1059,7 +1066,7 @@ def load_generation_mla_data(generation_mla_file):
 
         s = s + step
 
-        kv_cache_dtype = common.KVCacheQuantMode[kv_cache_dtype]
+        kv_cache_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(kv_cache_dtype)]
 
         try:
             # Check for conflict
@@ -1115,7 +1122,7 @@ def load_mla_bmm_data(mla_bmm_file):
         # NEW: Calculate energy from power and latency
         energy = power * latency  # watt-milliseconds
 
-        quant_mode = common.GEMMQuantMode[quant_mode]
+        quant_mode = common.GEMMQuantMode[_canonicalize_w16a16_dtype(quant_mode)]
 
         try:
             # Check for conflict
@@ -1200,9 +1207,9 @@ def load_context_dsa_module_data(dsa_file: str):
         energy = power * latency
 
         arch = row.get("architecture", DEFAULT_DSA_ARCHITECTURE)
-        gemm_mode = common.GEMMQuantMode[row["gemm_type"]]
-        fmha_mode = common.FMHAQuantMode[row["mla_dtype"]]
-        kv_dtype = common.KVCacheQuantMode[row["kv_cache_dtype"]]
+        gemm_mode = common.GEMMQuantMode[_canonicalize_w16a16_dtype(row["gemm_type"])]
+        fmha_mode = common.FMHAQuantMode[_canonicalize_w16a16_dtype(row["mla_dtype"])]
+        kv_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(row["kv_cache_dtype"])]
 
         dsa_data[fmha_mode][kv_dtype][gemm_mode][arch][num_heads][s][b] = {
             "latency": latency,
@@ -1250,8 +1257,8 @@ def load_generation_dsa_module_data(dsa_file: str):
         energy = power * latency
 
         arch = row.get("architecture", DEFAULT_DSA_ARCHITECTURE)
-        gemm_mode = common.GEMMQuantMode[row["gemm_type"]]
-        kv_dtype = common.KVCacheQuantMode[row["kv_cache_dtype"]]
+        gemm_mode = common.GEMMQuantMode[_canonicalize_w16a16_dtype(row["gemm_type"])]
+        kv_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(row["kv_cache_dtype"])]
 
         dsa_data[kv_dtype][gemm_mode][arch][num_heads][b][s] = {
             "latency": latency,
@@ -1262,10 +1269,48 @@ def load_generation_dsa_module_data(dsa_file: str):
     return dsa_data
 
 
-def load_deepseek_v4_mhc_module_data(mhc_file: str):
-    """Placeholder for future DeepSeek-V4 mHC module-level performance data."""
-    logger.debug(f"DeepSeek-V4 mHC module data file {mhc_file} not loaded.")
-    return None
+def load_mhc_module_data(mhc_file: str):
+    """Load DeepSeek-V4 mHC pre/post module-level performance data.
+
+    CSV columns: framework, version, device, op_name, kernel_source, model,
+    architecture, num_tokens, hc_mult, hidden_size, latency [, power]
+
+    ``op_name`` is ``pre`` or ``post``, matching the ``op`` arg of
+    ``query_mhc_module``.
+
+    Dict structure (matches query_mhc_module silicon path):
+        data[op][hc_mult][hidden_size][num_tokens]
+    """
+    if not os.path.exists(mhc_file):
+        logger.debug(f"mHC module data file {mhc_file} not found.")
+        return None
+
+    mhc_data = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(lambda: defaultdict()))
+    )
+
+    with open(mhc_file, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    has_power = len(rows) > 0 and "power" in rows[0]
+
+    for row in rows:
+        op = row["op_name"]
+        hc_mult = int(row["hc_mult"])
+        hidden_size = int(row["hidden_size"])
+        num_tokens = int(row["num_tokens"])
+        latency = float(row["latency"])
+        power = float(row.get("power", 0.0)) if has_power else 0.0
+        energy = power * latency
+
+        mhc_data[op][hc_mult][hidden_size][num_tokens] = {
+            "latency": latency,
+            "power": power,
+            "energy": energy,
+        }
+
+    return mhc_data
 
 
 def load_context_deepseek_v4_attention_module_data(attn_file: str):
@@ -1313,9 +1358,9 @@ def load_context_mla_module_data(mla_module_file: str):
         power = float(row.get("power", 0.0)) if has_power else 0.0
         energy = power * latency
 
-        fmha_mode = common.FMHAQuantMode[row["mla_dtype"]]
-        kv_dtype = common.KVCacheQuantMode[row["kv_cache_dtype"]]
-        gemm_mode = common.GEMMQuantMode[row["gemm_type"]]
+        fmha_mode = common.FMHAQuantMode[_canonicalize_w16a16_dtype(row["mla_dtype"])]
+        kv_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(row["kv_cache_dtype"])]
+        gemm_mode = common.GEMMQuantMode[_canonicalize_w16a16_dtype(row["gemm_type"])]
 
         mla_data[fmha_mode][kv_dtype][gemm_mode][num_heads][s][b] = {
             "latency": latency,
@@ -1359,9 +1404,9 @@ def load_generation_mla_module_data(mla_module_file: str):
         power = float(row.get("power", 0.0)) if has_power else 0.0
         energy = power * latency
 
-        fmha_mode = common.FMHAQuantMode[row["mla_dtype"]]
-        gemm_mode = common.GEMMQuantMode[row["gemm_type"]]
-        kv_dtype = common.KVCacheQuantMode[row["kv_cache_dtype"]]
+        fmha_mode = common.FMHAQuantMode[_canonicalize_w16a16_dtype(row["mla_dtype"])]
+        gemm_mode = common.GEMMQuantMode[_canonicalize_w16a16_dtype(row["gemm_type"])]
+        kv_dtype = common.KVCacheQuantMode[_canonicalize_w16a16_dtype(row["kv_cache_dtype"])]
 
         mla_data[fmha_mode][kv_dtype][gemm_mode][num_heads][b][s] = {
             "latency": latency,
@@ -2265,7 +2310,7 @@ class PerfDatabase:
                 PerfDataFilename.mla_generation_module: load_generation_mla_module_data,
                 PerfDataFilename.dsa_context_module: load_context_dsa_module_data,
                 PerfDataFilename.dsa_generation_module: load_generation_dsa_module_data,
-                PerfDataFilename.deepseek_v4_mhc_module: load_deepseek_v4_mhc_module_data,
+                PerfDataFilename.mhc_module: load_mhc_module_data,
                 PerfDataFilename.deepseek_v4_context_module: load_context_deepseek_v4_attention_module_data,
                 PerfDataFilename.deepseek_v4_generation_module: load_generation_deepseek_v4_attention_module_data,
             }
@@ -2311,7 +2356,7 @@ class PerfDatabase:
         self._scale_matrix_data = _load_op_data(PerfDataFilename.scale_matrix)
         self._context_dsa_module_data = _load_op_data(PerfDataFilename.dsa_context_module)
         self._generation_dsa_module_data = _load_op_data(PerfDataFilename.dsa_generation_module)
-        self._deepseek_v4_mhc_module_data = _load_op_data(PerfDataFilename.deepseek_v4_mhc_module)
+        self._mhc_module_data = _load_op_data(PerfDataFilename.mhc_module)
         self._context_deepseek_v4_attention_module_data = _load_op_data(PerfDataFilename.deepseek_v4_context_module)
         self._raw_context_deepseek_v4_attention_module_data = copy.deepcopy(
             self._context_deepseek_v4_attention_module_data
@@ -7195,7 +7240,7 @@ class PerfDatabase:
         return batch_size * total
 
     @functools.lru_cache(maxsize=32768)
-    def query_deepseek_v4_mhc_module(
+    def query_mhc_module(
         self,
         num_tokens: int,
         hidden_size: int,
@@ -7254,13 +7299,13 @@ class PerfDatabase:
             return PerformanceResult(get_empirical(), energy=0.0)
 
         def get_silicon():
-            mhc_data = getattr(self, "_deepseek_v4_mhc_module_data", None)
+            mhc_data = getattr(self, "_mhc_module_data", None)
             if not mhc_data:
                 raise PerfDataNotAvailableError(
                     f"DeepSeek-V4 mHC module data not loaded for system='{self.system}', "
                     f"backend='{self.backend}', version='{self.version}'."
                 )
-            mhc_dict = mhc_data[quant_mode][op][hc_mult][hidden_size]
+            mhc_dict = mhc_data[op][hc_mult][hidden_size]
             left, right = self._nearest_1d_point_helper(num_tokens, list(mhc_dict.keys()), inner_only=False)
             result = self._interp_1d([left, right], [mhc_dict[left], mhc_dict[right]], num_tokens)
             latency = result["latency"] if isinstance(result, dict) else result

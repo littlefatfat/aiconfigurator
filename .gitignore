@@ -32,3 +32,5 @@ collector/all_*
 
 e2e_dataset/insight_benchmark_test/hisim/output/*
 e2e_dataset/tmp/*
+
+support_deepseekv4_mhc.md
