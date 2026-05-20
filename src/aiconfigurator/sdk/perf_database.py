@@ -7000,6 +7000,51 @@ class PerfDatabase:
     # DSA (DeepSeek Sparse Attention) Queries
     # ═══════════════════════════════════════════════════════════════════
 
+    def query_context_dsa_module_with_nsys_fit(
+        self,
+        b: int,
+        s: int,
+        prefix: int = 0,
+        index_topk: int | None = None
+    ):
+        """
+            latency(s, c) = α₀ + α₁·s + α₂·T + α₃·s·T + α₄·s·max(0,T−K) + α₅·FlashWork(s,c,K)
+            where T = s + c,  K = 2048
+
+            Coefficients (R² = 0.999091):
+            α₀ (          constant) =   1.676218e+02  [us]
+            α₁ (                 s) =  -9.110362e-01  [us/token]
+            α₂ (                 T) =   1.811801e-03  [us/token]
+            α₃ (               s·T) =   4.470979e-04  [us/token²]
+            α₄ (      s·max(0,T-K)) =  -4.411762e-04  [us/token²]
+            α₅ (  FlashWork(s,c,K)) =   1.207413e-04  [us/work]
+        """
+        # a0, a1, a2, a3, a4, a5 = (167.6218, -0.911036, 0.001812, 4.4710e-04, -4.4118e-04, 1.2074e-04)
+        a0, a1, a2, a3, a4, a5 = (2.058492e+02, 0.000000e+00, 2.019512e-03, 0.000000e+00, 5.924153e-06, 1.210806e-04)
+
+        t0 = a0
+        t1 = a1 * s
+        t2 = a2 * (s + prefix)
+        t3 = a3 * s * (s + prefix)
+        t4 = a4 * s * max(0, s + prefix - index_topk)
+
+        def flash_work(s: int, c: int, k: int) -> float:
+            """Total FlashAttn compute work units (proportional to actual FLOPS).
+
+            For each query token i in [0, s-1], it attends to min(K, c + i + 1) KV
+            positions due to causal masking + DSA top-k sparsity.
+            """
+            thresh = max(0, min(s, k - c))
+            if thresh <= 0:
+                return float(s * k)
+            dense = thresh * c + thresh * (thresh + 1) // 2
+            sparse = (s - thresh) * k
+            return float(dense + sparse)
+
+        t5 = a5 * flash_work(s, prefix, index_topk)
+
+        return (t0 + t1 + t2 + t3 + t4 + t5) * b / 1e3
+
     @functools.lru_cache(maxsize=32768)
     def query_context_dsa_module(
         self,
@@ -7039,6 +7084,11 @@ class PerfDatabase:
         Returns:
             PerformanceResult or (sol_time, sol_math, sol_mem) for SOL_FULL
         """
+
+        kvcache_quant_mode = common.KVCacheQuantMode.bfloat16
+        fmha_quant_mode = common.FMHAQuantMode.bfloat16
+        gemm_quant_mode = common.GEMMQuantMode.bfloat16
+
         dims = DSA_MODEL_DIMS.get(architecture, DSA_MODEL_DIMS[DEFAULT_DSA_ARCHITECTURE])
         hidden_size = dims["hidden_size"]
         q_lora = dims["q_lora_rank"]
@@ -7054,6 +7104,11 @@ class PerfDatabase:
             index_topk = dims["index_topk"]
         qk_head_dim = qk_nope + qk_rope
         attn_head_dim = kv_lora + qk_rope
+
+        lat = self.query_context_dsa_module_with_nsys_fit(
+            b, s, prefix, index_topk
+        )
+        return PerformanceResult(lat)
 
         def get_sol(
             b: int,
