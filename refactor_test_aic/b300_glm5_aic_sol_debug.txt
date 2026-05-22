@@ -1,0 +1,110 @@
+现在我要在B300 * 8卡 的环境部署 GLM5 注意是 nvfp4 版本的，部署指令是 
+
+python3 `pwd`/examples/benchmark/serving_hook/sglang_launch_server.py \
+    --model-path="/home/admin/resource-slow/model/464482ce/GLM-5/d07b32a9" \
+    --trust-remote-code \
+    --disable-overlap-schedule \
+    --attention-backend="nsa" \
+    --chunked-prefill-size=16384 \
+    --disable-flashinfer-autotune \
+    --enable-cache-report \
+    --enable-dp-lm-head \
+    --kv-cache-dtype="fp8_e4m3" \
+    --max-prefill-tokens=16384 \
+    --cuda-graph-max-bs 256 \
+    --disable-cuda-graph-padding \
+    --max-running-requests 256 \
+    --mem-fraction-static=0.8 \
+    --moe-dense-tp-size=1 \
+    --quantization="modelopt_fp4" \
+    --sampling-backend="pytorch" \
+    --tp-size=8 \
+    --trust-remote-code \
+    --watchdog-timeout=1000000
+
+其中还会有一些hicache相关的指令，但是我就不列出来了，我现在想开启 aic 的 SOL模式进行分析，也就是理论最优，我想通过我的仿真器分析出ttft，吞吐这些，但是我不确定aic当前的分析模式是不是准确的
+有没有可能哪里配置有问题就会导致latency误差很大，我的仿真入口在 
+容器 mry-dpsk-v4
+cd /host/insight_benchmark/test/hisim/mry_debug/one_case
+python3 simulate_one_case.py --server-args ./l3.server_args.glm5.json --hisim-config ./l3.hisim_config.glm5.json --requests /host/bl_data_trace/multi_node_trace_combine_glm-5/hisim-num-node-5-glm-5-blksz-256-bucket-80-144-cnt-8952-time-60min.jsonl --backend-version 0.5.10 --device-name b300_sxm
+
+请您！求求了！帮我看下整个流程，重点是调用到aic及其进行计算的部分，我现在开的是SOL模式，宿主机目录 /data2/maruiyan.mry/hisim-sglang/sglang/tools/sglang-simulator/src/sglang_simulator/time_predictor/aiconfigurator.py，对应容器里 /host/hisim-sglang/sglang/tools/sglang-simulator/src/sglang_simulator/time_predictor/aiconfigurator.py
+你可以在代码中找到
+        # mry debug
+        database_mode = DatabaseMode.SOL # tmp
+        print(f"Using database mode: {database_mode}")
+        database.set_default_database_mode(database_mode)
+
+
+我现在希望你根据我的执行流程，
+帮我把每个仿真的batch的aic预估都统计出来成一个文件，
+每次得到的算子的耗时，也全部打印出来，而且需要详细信息，
+包括 用到的数据类型，还要打印 每个 算子最终算出来的的 sol_time, sol_math, sol_mem，我好看看访存和计算的瓶颈
+
+以及！最重要的，帮我看下我是不是哪里调用错了，数据类型啊啥的导致flops计算差异，参考我的部署模式哦，kvcache是fp8_e4m3，quantization="modelopt_fp4" 
+谢谢！拜托您了！！救救孩子啊！！
+
+
+# ============================================================
+# 诊断结果 (2025-05-15)
+# ============================================================
+
+## 发现的 Critical Bugs
+
+### Bug 1: data_type 配错 → FP8 应为 FP4
+文件: l3.hisim_config.glm5.json scheduler.data_type = "FP8" 应为 "FP4"
+影响:
+  - 你的部署是 quantization="modelopt_fp4" (nvfp4)，但 AIC 用 fp8 参数计算
+  - B300 上 fp4_tc_flops = 14 PFLOPS, fp8_tc_flops = 4.5 PFLOPS
+  - sol_math 被高估 3.11x (14/4.5)
+  - sol_mem 被高估 1.78x (fp8 mem=1B vs nvfp4 mem=9/16B)
+  - GEMM 和 MoE 算子全部受影响！
+
+### Bug 2: kv_cache_data_type 配错 → FP16 应为 FP8
+文件: l3.hisim_config.glm5.json scheduler.kv_cache_data_type = "FP16" 应为 "FP8"
+影响:
+  - 你的部署是 kv-cache-dtype="fp8_e4m3"，但 AIC 用 bfloat16 参数计算
+  - KVCacheQuantMode.bfloat16: 2B/element vs KVCacheQuantMode.fp8: 1B/element
+  - Attention 的 KV cache 访存量被高估 2x！
+
+### 根因: _build_schedule_config 函数逻辑缺陷
+原始逻辑 (simulate_one_case.py:115-121):
+  if server_args.get("quantization") is not None:
+      dtype = "FP8"  # 不管 fp4/fp8/int8，一律设 FP8！
+修复: 见 fix_build_schedule_config.py
+
+## 修复步骤
+
+### 立即修复 (容器内执行):
+
+1. 修复 hisim_config:
+   cd /host/insight_benchmark/test/hisim/mry_debug/one_case
+   python3 -c "
+import json
+with open('l3.hisim_config.glm5.json') as f: c = json.load(f)
+c['scheduler']['data_type'] = 'FP4'
+c['scheduler']['kv_cache_data_type'] = 'FP8'
+with open('l3.hisim_config.glm5.json', 'w') as f: json.dump(c, f, indent=4)
+print('Fixed!')
+"
+
+2. 启用 SOL debug 日志 (可选):
+   cp /host/aiconfigurator/refactor_test_aic/b300_glm5_sol_debug_patch.py /host/insight_benchmark/test/hisim/mry_debug/one_case/
+   在 simulate_one_case.py 的 import 之后加:
+     from b300_glm5_sol_debug_patch import patch_aiconfigurator_predictor
+     patch_aiconfigurator_predictor()
+   日志输出到 /tmp/sol_debug_output/sol_debug_all_batches.jsonl
+
+3. 修复 _build_schedule_config (防止未来再犯):
+   将 fix_build_schedule_config.py 中的函数替换 simulate_one_case.py 的原函数
+
+### 预期修复效果:
+  - GEMM/MoE 的 sol_math: 降低 ~3.11x（14PFLOPS vs 4.5PFLOPS）
+  - GEMM/MoE 的 sol_mem: 降低 ~1.78x（9/16 B vs 1B per weight）
+  - Attention 的 sol_mem: 降低 ~2x（fp8 vs bf16 kv-cache）
+  - 整体 latency 预估将大幅下降，更接近真实硬件表现
+
+## 相关文件
+  - 修复脚本: /host/aiconfigurator/refactor_test_aic/b300_glm5_sol_fix.sh
+  - SOL debug patch: /host/aiconfigurator/refactor_test_aic/b300_glm5_sol_debug_patch.py
+  - _build_schedule_config 修复: /host/aiconfigurator/refactor_test_aic/fix_build_schedule_config.py

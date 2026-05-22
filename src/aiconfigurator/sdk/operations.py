@@ -1661,7 +1661,7 @@ class ContextDSAModule(Operation):
         self._num_heads = num_heads
         self._kvcache_quant_mode = kvcache_quant_mode
         self._fmha_quant_mode = fmha_quant_mode
-        self._gemm_quant_mode = gemm_quant_mode
+        self._gemm_quant_mode = common.GEMMQuantMode.bfloat16 # mry debug
         self._architecture = architecture
         self._weights = 0.0
 
@@ -1713,7 +1713,7 @@ class GenerationDSAModule(Operation):
         super().__init__(name, scale_factor)
         self._num_heads = num_heads
         self._kv_cache_dtype = kv_cache_dtype
-        self._gemm_quant_mode = gemm_quant_mode
+        self._gemm_quant_mode = common.GEMMQuantMode.bfloat16 # mry debug
         self._architecture = architecture
         self._weights = 0.0
 

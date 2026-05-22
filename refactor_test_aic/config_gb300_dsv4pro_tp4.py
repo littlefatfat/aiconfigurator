@@ -37,7 +37,7 @@ SUBDIR_SIGNED_ERROR = 'signed_error'
 # 模型 / 后端 — DSv4-Pro
 # ============================================================================
 MODEL_NAME = 'deepseek-ai/DeepSeek-V4-Pro'
-MODEL_PATH = "/nfs/deepseek-ai/DeepSeek-V4-Pro"
+MODEL_PATH = '/home/admin/resource-slow/model/464482ce/DeepSeek-V4-Pro/04242026'
 BACKEND_NAME = 'sglang'
 
 # AIC 性能数据库：gb300 + sglang + 我们采集的版本号

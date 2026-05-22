@@ -1,0 +1,1155 @@
+{
+  "description": "GLM-5 NVFP4 Prefill SOL Breakdown on B300 SXM x8 TP",
+  "config": {
+    "model": "GLM-5.1-FP8 (nvfp4 quantized)",
+    "device": "B300 SXM",
+    "tp_size": 8,
+    "gemm_quant": "nvfp4 (mem=9/16, compute=4x, fp4_tc=14PFLOPS)",
+    "moe_quant": "nvfp4",
+    "kvcache": "fp8 (mem=1B, fp8_tc=4.5PFLOPS)",
+    "fmha": "fp8",
+    "mem_bw": "7.75 TB/s"
+  },
+  "cases": [
+    {
+      "isl": 4096,
+      "isl_k": "4K",
+      "batch_size": 1,
+      "prefix": 0,
+      "total_latency_ms": 48.2749,
+      "ops": [
+        {
+          "op_name": "context_embedding",
+          "latency_ms": 0.006494,
+          "sol_time": 0.006494,
+          "sol_math": 0.0,
+          "sol_mem": 0.006494,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_add_norm_1",
+          "latency_ms": 2.026255,
+          "sol_time": 2.026255,
+          "sol_math": 0.0,
+          "sol_mem": 2.026255,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_attention",
+          "latency_ms": 18.705201,
+          "sol_time": 0.23981,
+          "sol_math": 0.23981,
+          "sol_mem": 0.016526,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_context_dsa_module",
+              "sol_time": 0.23981026326755556,
+              "sol_math": 0.23981026326755556,
+              "sol_mem": 0.016525642322580643,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_add_norm_2",
+          "latency_ms": 2.026255,
+          "sol_time": 2.026255,
+          "sol_math": 0.0,
+          "sol_mem": 2.026255,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_gate_up_gemm",
+          "latency_ms": 0.172153,
+          "sol_time": 0.002207,
+          "sol_math": 0.001841,
+          "sol_mem": 0.002207,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.0022070833548387095,
+              "sol_math": 0.0018407002697142859,
+              "sol_mem": 0.0022070833548387095,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_shared_act_gate",
+          "latency_ms": 0.06332,
+          "sol_time": 0.06332,
+          "sol_math": 0.0,
+          "sol_mem": 0.06332,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_ffn2_gemm",
+          "latency_ms": 0.157312,
+          "sol_time": 0.002017,
+          "sol_math": 0.00092,
+          "sol_mem": 0.002017,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.0020168175483870968,
+              "sol_math": 0.0009203501348571429,
+              "sol_mem": 0.0020168175483870968,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_router_gemm",
+          "latency_ms": 0.559331,
+          "sol_time": 0.007171,
+          "sol_math": 0.005727,
+          "sol_mem": 0.007171,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.007170906838709677,
+              "sol_math": 0.005726623061333333,
+              "sol_mem": 0.007170906838709677,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_pre_dispatch",
+          "latency_ms": 7.633633,
+          "sol_time": 0.097867,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 0.09786709333333334,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe",
+          "latency_ms": 9.260617,
+          "sol_time": 0.118726,
+          "sol_math": 0.03436,
+          "sol_mem": 0.118726,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_moe",
+              "sol_time": 0.11872586322580646,
+              "sol_math": 0.034359738368,
+              "sol_mem": 0.11872586322580646,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_post_dispatch",
+          "latency_ms": 7.633633,
+          "sol_time": 0.097867,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 0.09786709333333334,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_logits_gemm",
+          "latency_ms": 0.030703,
+          "sol_time": 0.030703,
+          "sol_math": 0.000106,
+          "sol_mem": 0.030703,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.030702798451612903,
+              "sol_math": 0.00010573141333333333,
+              "sol_mem": 0.030702798451612903,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_p2p",
+          "latency_ms": 0.0,
+          "sol_time": 0.0,
+          "sol_math": 0.0,
+          "sol_mem": 0.0,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        }
+      ]
+    },
+    {
+      "isl": 16384,
+      "isl_k": "16K",
+      "batch_size": 1,
+      "prefix": 0,
+      "total_latency_ms": 204.6988,
+      "ops": [
+        {
+          "op_name": "context_embedding",
+          "latency_ms": 0.025978,
+          "sol_time": 0.025978,
+          "sol_math": 0.0,
+          "sol_mem": 0.025978,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_add_norm_1",
+          "latency_ms": 8.105019,
+          "sol_time": 8.105019,
+          "sol_math": 0.0,
+          "sol_mem": 8.105019,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_attention",
+          "latency_ms": 107.203002,
+          "sol_time": 1.374397,
+          "sol_math": 1.374397,
+          "sol_mem": 0.029724,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_context_dsa_module",
+              "sol_time": 1.3743974572942224,
+              "sol_math": 1.3743974572942224,
+              "sol_mem": 0.029723747096774195,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_add_norm_2",
+          "latency_ms": 8.105019,
+          "sol_time": 8.105019,
+          "sol_math": 0.0,
+          "sol_mem": 8.105019,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_gate_up_gemm",
+          "latency_ms": 0.635183,
+          "sol_time": 0.008143,
+          "sol_math": 0.007363,
+          "sol_mem": 0.008143,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.008143376516129031,
+              "sol_math": 0.0073628010788571435,
+              "sol_mem": 0.008143376516129031,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_shared_act_gate",
+          "latency_ms": 0.253282,
+          "sol_time": 0.253282,
+          "sol_math": 0.0,
+          "sol_mem": 0.253282,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_ffn2_gemm",
+          "latency_ms": 0.602534,
+          "sol_time": 0.007725,
+          "sol_math": 0.003681,
+          "sol_mem": 0.007725,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.007724791741935484,
+              "sol_math": 0.0036814005394285717,
+              "sol_mem": 0.007724791741935484,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_router_gemm",
+          "latency_ms": 2.142342,
+          "sol_time": 0.027466,
+          "sol_math": 0.022906,
+          "sol_mem": 0.027466,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.027465926193548387,
+              "sol_math": 0.02290649224533333,
+              "sol_mem": 0.027465926193548387,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_pre_dispatch",
+          "latency_ms": 30.534533,
+          "sol_time": 0.391468,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 0.39146837333333334,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe",
+          "latency_ms": 16.52664,
+          "sol_time": 0.21188,
+          "sol_math": 0.137439,
+          "sol_mem": 0.21188,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_moe",
+              "sol_time": 0.21188000206451613,
+              "sol_math": 0.137438953472,
+              "sol_mem": 0.21188000206451613,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_post_dispatch",
+          "latency_ms": 30.534533,
+          "sol_time": 0.391468,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 0.39146837333333334,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_logits_gemm",
+          "latency_ms": 0.030703,
+          "sol_time": 0.030703,
+          "sol_math": 0.000106,
+          "sol_mem": 0.030703,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.030702798451612903,
+              "sol_math": 0.00010573141333333333,
+              "sol_mem": 0.030702798451612903,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_p2p",
+          "latency_ms": 0.0,
+          "sol_time": 0.0,
+          "sol_math": 0.0,
+          "sol_mem": 0.0,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        }
+      ]
+    },
+    {
+      "isl": 32768,
+      "isl_k": "32K",
+      "batch_size": 1,
+      "prefix": 0,
+      "total_latency_ms": 479.9676,
+      "ops": [
+        {
+          "op_name": "context_embedding",
+          "latency_ms": 0.051955,
+          "sol_time": 0.051955,
+          "sol_math": 0.0,
+          "sol_mem": 0.051955,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_add_norm_1",
+          "latency_ms": 16.210038,
+          "sol_time": 16.210038,
+          "sol_math": 0.0,
+          "sol_mem": 16.210038,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_attention",
+          "latency_ms": 291.903775,
+          "sol_time": 3.742356,
+          "sol_math": 3.742356,
+          "sol_mem": 0.047321,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_context_dsa_module",
+              "sol_time": 3.7423560931555557,
+              "sol_math": 3.7423560931555557,
+              "sol_mem": 0.04732122012903226,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_add_norm_2",
+          "latency_ms": 16.210038,
+          "sol_time": 16.210038,
+          "sol_math": 0.0,
+          "sol_mem": 16.210038,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_gate_up_gemm",
+          "latency_ms": 1.252558,
+          "sol_time": 0.016058,
+          "sol_math": 0.014726,
+          "sol_mem": 0.016058,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.01605843406451613,
+              "sol_math": 0.014725602157714287,
+              "sol_mem": 0.01605843406451613,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_shared_act_gate",
+          "latency_ms": 0.506564,
+          "sol_time": 0.506564,
+          "sol_math": 0.0,
+          "sol_mem": 0.506564,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_ffn2_gemm",
+          "latency_ms": 1.196163,
+          "sol_time": 0.015335,
+          "sol_math": 0.007363,
+          "sol_mem": 0.015335,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.015335424000000002,
+              "sol_math": 0.0073628010788571435,
+              "sol_mem": 0.015335424000000002,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_router_gemm",
+          "latency_ms": 4.253024,
+          "sol_time": 0.054526,
+          "sol_math": 0.045813,
+          "sol_mem": 0.054526,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.054525952,
+              "sol_math": 0.04581298449066666,
+              "sol_mem": 0.054525952,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_pre_dispatch",
+          "latency_ms": 61.069066,
+          "sol_time": 0.782937,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 0.7829367466666667,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe",
+          "latency_ms": 26.214671,
+          "sol_time": 0.336086,
+          "sol_math": 0.274878,
+          "sol_mem": 0.336086,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_moe",
+              "sol_time": 0.336085520516129,
+              "sol_math": 0.274877906944,
+              "sol_mem": 0.336085520516129,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_post_dispatch",
+          "latency_ms": 61.069066,
+          "sol_time": 0.782937,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 0.7829367466666667,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_logits_gemm",
+          "latency_ms": 0.030703,
+          "sol_time": 0.030703,
+          "sol_math": 0.000106,
+          "sol_mem": 0.030703,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.030702798451612903,
+              "sol_math": 0.00010573141333333333,
+              "sol_mem": 0.030702798451612903,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_p2p",
+          "latency_ms": 0.0,
+          "sol_time": 0.0,
+          "sol_math": 0.0,
+          "sol_mem": 0.0,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        }
+      ]
+    },
+    {
+      "isl": 65536,
+      "isl_k": "64K",
+      "batch_size": 1,
+      "prefix": 0,
+      "total_latency_ms": 1259.2037,
+      "ops": [
+        {
+          "op_name": "context_embedding",
+          "latency_ms": 0.10391,
+          "sol_time": 0.10391,
+          "sol_math": 0.0,
+          "sol_mem": 0.10391,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_add_norm_1",
+          "latency_ms": 32.420076,
+          "sol_time": 32.420076,
+          "sol_math": 0.0,
+          "sol_mem": 32.420076,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_attention",
+          "latency_ms": 890.003741,
+          "sol_time": 11.410304,
+          "sol_math": 11.410304,
+          "sol_mem": 0.082516,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_context_dsa_module",
+              "sol_time": 11.410304372280889,
+              "sol_math": 11.410304372280889,
+              "sol_mem": 0.08251616619354839,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_add_norm_2",
+          "latency_ms": 32.420076,
+          "sol_time": 32.420076,
+          "sol_math": 0.0,
+          "sol_mem": 32.420076,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_gate_up_gemm",
+          "latency_ms": 2.487307,
+          "sol_time": 0.031889,
+          "sol_math": 0.029451,
+          "sol_mem": 0.031889,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.031888549161290324,
+              "sol_math": 0.029451204315428574,
+              "sol_mem": 0.031888549161290324,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_shared_act_gate",
+          "latency_ms": 1.013127,
+          "sol_time": 1.013127,
+          "sol_math": 0.0,
+          "sol_mem": 1.013127,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_ffn2_gemm",
+          "latency_ms": 2.383422,
+          "sol_time": 0.030557,
+          "sol_math": 0.014726,
+          "sol_mem": 0.030557,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.030556688516129034,
+              "sol_math": 0.014725602157714287,
+              "sol_mem": 0.030556688516129034,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_router_gemm",
+          "latency_ms": 8.474388,
+          "sol_time": 0.108646,
+          "sol_math": 0.091626,
+          "sol_mem": 0.108646,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.10864600361290322,
+              "sol_math": 0.09162596898133332,
+              "sol_mem": 0.10864600361290322,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_pre_dispatch",
+          "latency_ms": 122.138132,
+          "sol_time": 1.565873,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 1.5658734933333334,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe",
+          "latency_ms": 45.590731,
+          "sol_time": 0.584497,
+          "sol_math": 0.549756,
+          "sol_mem": 0.584497,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_moe",
+              "sol_time": 0.5844965574193548,
+              "sol_math": 0.549755813888,
+              "sol_mem": 0.5844965574193548,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_post_dispatch",
+          "latency_ms": 122.138132,
+          "sol_time": 1.565873,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 1.5658734933333334,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_logits_gemm",
+          "latency_ms": 0.030703,
+          "sol_time": 0.030703,
+          "sol_math": 0.000106,
+          "sol_mem": 0.030703,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.030702798451612903,
+              "sol_math": 0.00010573141333333333,
+              "sol_mem": 0.030702798451612903,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_p2p",
+          "latency_ms": 0.0,
+          "sol_time": 0.0,
+          "sol_math": 0.0,
+          "sol_mem": 0.0,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        }
+      ]
+    },
+    {
+      "isl": 131072,
+      "isl_k": "128K",
+      "batch_size": 1,
+      "prefix": 0,
+      "total_latency_ms": 3733.8887,
+      "ops": [
+        {
+          "op_name": "context_embedding",
+          "latency_ms": 0.207821,
+          "sol_time": 0.207821,
+          "sol_math": 0.0,
+          "sol_mem": 0.207821,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_add_norm_1",
+          "latency_ms": 64.840151,
+          "sol_time": 64.840151,
+          "sol_math": 0.0,
+          "sol_mem": 64.840151,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_attention",
+          "latency_ms": 3000.997347,
+          "sol_time": 38.474325,
+          "sol_math": 38.474325,
+          "sol_mem": 0.152906,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_context_dsa_module",
+              "sol_time": 38.47432496014222,
+              "sol_math": 38.47432496014222,
+              "sol_mem": 0.15290605832258064,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_add_norm_2",
+          "latency_ms": 64.840151,
+          "sol_time": 64.840151,
+          "sol_math": 0.0,
+          "sol_mem": 64.840151,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_gate_up_gemm",
+          "latency_ms": 4.956805,
+          "sol_time": 0.063549,
+          "sol_math": 0.058902,
+          "sol_mem": 0.063549,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.0635487793548387,
+              "sol_math": 0.05890240863085715,
+              "sol_mem": 0.0635487793548387,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_shared_act_gate",
+          "latency_ms": 2.026255,
+          "sol_time": 2.026255,
+          "sol_math": 0.0,
+          "sol_mem": 2.026255,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_ffn2_gemm",
+          "latency_ms": 4.757939,
+          "sol_time": 0.060999,
+          "sol_math": 0.029451,
+          "sol_mem": 0.060999,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.060999217548387094,
+              "sol_math": 0.029451204315428574,
+              "sol_mem": 0.060999217548387094,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_router_gemm",
+          "latency_ms": 16.917116,
+          "sol_time": 0.216886,
+          "sol_math": 0.183252,
+          "sol_mem": 0.216886,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.21688610683870968,
+              "sol_math": 0.18325193796266664,
+              "sol_mem": 0.21688610683870968,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_pre_dispatch",
+          "latency_ms": 244.276265,
+          "sol_time": 3.131747,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 3.1317469866666667,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe",
+          "latency_ms": 85.761907,
+          "sol_time": 1.099512,
+          "sol_math": 1.099512,
+          "sol_mem": 1.081319,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_moe",
+              "sol_time": 1.099511627776,
+              "sol_math": 1.099511627776,
+              "sol_mem": 1.0813186312258063,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_post_dispatch",
+          "latency_ms": 244.276265,
+          "sol_time": 3.131747,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 3.1317469866666667,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_logits_gemm",
+          "latency_ms": 0.030703,
+          "sol_time": 0.030703,
+          "sol_math": 0.000106,
+          "sol_mem": 0.030703,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.030702798451612903,
+              "sol_math": 0.00010573141333333333,
+              "sol_mem": 0.030702798451612903,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_p2p",
+          "latency_ms": 0.0,
+          "sol_time": 0.0,
+          "sol_math": 0.0,
+          "sol_mem": 0.0,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        }
+      ]
+    },
+    {
+      "isl": 262144,
+      "isl_k": "256K",
+      "batch_size": 1,
+      "prefix": 0,
+      "total_latency_ms": 12347.8529,
+      "ops": [
+        {
+          "op_name": "context_embedding",
+          "latency_ms": 0.415642,
+          "sol_time": 0.415642,
+          "sol_math": 0.0,
+          "sol_mem": 0.415642,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_add_norm_1",
+          "latency_ms": 129.680303,
+          "sol_time": 129.680303,
+          "sol_math": 0.0,
+          "sol_mem": 129.680303,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_attention",
+          "latency_ms": 10882.159256,
+          "sol_time": 139.514862,
+          "sol_math": 139.514862,
+          "sol_mem": 0.293686,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_context_dsa_module",
+              "sol_time": 139.51486225430756,
+              "sol_math": 139.51486225430756,
+              "sol_mem": 0.2936858425806451,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_add_norm_2",
+          "latency_ms": 129.680303,
+          "sol_time": 129.680303,
+          "sol_math": 0.0,
+          "sol_mem": 129.680303,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_gate_up_gemm",
+          "latency_ms": 9.895801,
+          "sol_time": 0.126869,
+          "sol_math": 0.117805,
+          "sol_mem": 0.126869,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.12686923974193548,
+              "sol_math": 0.1178048172617143,
+              "sol_mem": 0.12686923974193548,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_shared_act_gate",
+          "latency_ms": 4.052509,
+          "sol_time": 4.052509,
+          "sol_math": 0.0,
+          "sol_mem": 4.052509,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        },
+        {
+          "op_name": "context_shared_ffn2_gemm",
+          "latency_ms": 9.506973,
+          "sol_time": 0.121884,
+          "sol_math": 0.058902,
+          "sol_mem": 0.121884,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.12188427561290323,
+              "sol_math": 0.05890240863085715,
+              "sol_mem": 0.12188427561290323,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_router_gemm",
+          "latency_ms": 33.802572,
+          "sol_time": 0.433366,
+          "sol_math": 0.366504,
+          "sol_mem": 0.433366,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.4333663132903226,
+              "sol_math": 0.3665038759253333,
+              "sol_mem": 0.4333663132903226,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_pre_dispatch",
+          "latency_ms": 488.55253,
+          "sol_time": 6.263494,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 6.2634939733333335,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe",
+          "latency_ms": 171.523814,
+          "sol_time": 2.199023,
+          "sol_math": 2.199023,
+          "sol_mem": 2.074963,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_moe",
+              "sol_time": 2.199023255552,
+              "sol_math": 2.199023255552,
+              "sol_mem": 2.0749627788387097,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_moe_post_dispatch",
+          "latency_ms": 488.55253,
+          "sol_time": 6.263494,
+          "sol_math": 0,
+          "sol_mem": 0,
+          "bottleneck": "MATH",
+          "db_calls": [
+            {
+              "method": "query_custom_allreduce",
+              "sol_time": 6.2634939733333335,
+              "sol_math": 0,
+              "sol_mem": 0,
+              "bottleneck": "MATH"
+            }
+          ]
+        },
+        {
+          "op_name": "context_logits_gemm",
+          "latency_ms": 0.030703,
+          "sol_time": 0.030703,
+          "sol_math": 0.000106,
+          "sol_mem": 0.030703,
+          "bottleneck": "MEM",
+          "db_calls": [
+            {
+              "method": "query_gemm",
+              "sol_time": 0.030702798451612903,
+              "sol_math": 0.00010573141333333333,
+              "sol_mem": 0.030702798451612903,
+              "bottleneck": "MEM"
+            }
+          ]
+        },
+        {
+          "op_name": "context_p2p",
+          "latency_ms": 0.0,
+          "sol_time": 0.0,
+          "sol_math": 0.0,
+          "sol_mem": 0.0,
+          "bottleneck": "MEM (bandwidth-only)",
+          "db_calls": []
+        }
+      ]
+    }
+  ]
+}

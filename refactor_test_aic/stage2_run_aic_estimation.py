@@ -30,6 +30,7 @@ from .config import (
     SUBDIR_CSV,
     SUBDIR_ESTIMATION,
     get_output_dir,
+    get_predictor_overrides,
 )
 from .utils import RequestInfo, ctx_attn_flops_ratio_with_avg, logger, write_csv
 
@@ -128,17 +129,22 @@ def estimate_batch_latency(reqs: list[RequestInfo], is_decode: bool) -> float:
 
     total_ms = sum(latency_dict.values())
 
-    # 校正系数
+    # 校正系数 (legacy multiplicative)
     if is_decode:
         total_ms *= DECODE_CORRECTION_FACTOR
     else:
         total_ms *= PREFILL_CORRECTION_FACTOR
 
-    # prefill < 1k  min latency 114ms
-    # mry debug
-    if "DeepSeek-V4" in MODEL_PATH and not is_decode:
-        total_ms = max(total_ms, 118.0)
-        
+    # Scenario-aware predictor knobs: per-(hw, tp, model) scale + prefill floor
+    # AIC current impl does not model CPU bubble; floor stabilises short prefill.
+    _ov = get_predictor_overrides()
+    if is_decode:
+        total_ms *= _ov.get("decode_scale_factor", 1.0)
+    else:
+        total_ms *= _ov.get("prefill_scale_factor", 1.0)
+        _floor = _ov.get("prefill_min_latency", 0.0)
+        if total_ms > 0:
+            total_ms = max(total_ms, _floor)
 
     if summary.check_oom():
         logger.warning("OOM detected during estimation.")
