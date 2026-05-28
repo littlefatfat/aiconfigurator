@@ -55,19 +55,35 @@ AIC_VERSION = '0.5.11_660b28976_dsv4pro'
 # ============================================================================
 
 MODEL_CONFIG_KWARGS = dict(
+    # 并行
     pp_size=1,
     tp_size=4,
     moe_tp_size=4,
     moe_ep_size=1,
     attention_dp_size=1,
+
+    # MoE 扩展（DSv4-Pro 单机 tp=4，不开 wideep/EPLB）
     enable_wideep=False,
+    enable_eplb=False,
+    wideep_num_slots=None,
+    moe_backend=None,                      # wideep only (e.g. "deepep")
+    sms=20,                                # wideep partitioning, default 20
+
+    # MTP（DSv4-Pro sglang 启动未开 speculative decoding）
+    nextn=0,
+    nextn_accept_rates=None,
+
+    # 模型构建
+    overwrite_num_layers=0,                # 0 = use model's native layer count
+    attention_backend='flashinfer',        # aic 内部按 DSv4 arch dispatch 到 CSA/HCA
+
+    # workload
     workload_distribution='power_law_1.01',
 
-    # 量化：DSv4-Pro 是 FP8 checkpoint，gemm/moe 用 fp8_block；
-    # 如果 Stage 2 报缺数据，可能要切到 w4a8_mxfp4_mxfp8 (对应 --moe-runner-backend flashinfer_mxfp4)
+    # 量化：DSv4-Pro 是 FP8 checkpoint
+    # gemm/moe 用 fp8_block；缺数据时切到 w4a8_mxfp4_mxfp8 (对应 --moe-runner-backend flashinfer_mxfp4)
     gemm_quant_mode=GEMMQuantMode.fp8_block,
     moe_quant_mode=MoEQuantMode.w4a8_mxfp4_mxfp8,
-    # 备选: moe_quant_mode=MoEQuantMode.w4a8_mxfp4_mxfp8,
     kvcache_quant_mode=KVCacheQuantMode.fp8,
     fmha_quant_mode=FMHAQuantMode.bfloat16,
     comm_quant_mode=CommQuantMode.half,
